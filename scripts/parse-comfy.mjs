@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
  * Local Comfy public-catalog parser (educational).
- * Run from YOUR PC/WSL (Cloudflare often blocks cloud IPs):
+ * Run from YOUR PC/WSL (Cloudflare often blocks datacenter IPs):
  *
  *   npm run parse:comfy
  *
- * Polite delays, category pages only. Writes data/catalog/live-products.json
- * and merges into src/content/catalog-live.ts for the app.
+ * Strategy (from research):
+ * 1) Resolve real category URL keys via https://im.comfy.ua/api/categories/...
+ * 2) Fetch public category HTML on comfy.ua (polite delay)
+ * 3) Parse JSON-LD + window.__INITIAL_STATE__ when present
  *
- * Respect comfy.ua robots.txt: no /api/, no aggressive crawling.
+ * Respect robots.txt: do not hit comfy.ua/api/. Product microservices on
+ * im.comfy.ua are often Cloudflare-gated — HTML fallback is primary.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -22,23 +25,23 @@ fs.mkdirSync(outDir, { recursive: true });
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 ComfyFloorMap/1.0 (personal-education)";
 
-/** Map Comfy category URL path → our section id */
+/** Real Comfy urlKey → our section id (verified via im.comfy.ua categories API) */
 const CATEGORIES = [
-  { path: "/ua/smartfony/", sectionId: "smartphones" },
-  { path: "/ua/noutbuki/", sectionId: "laptops" },
-  { path: "/ua/televizory/", sectionId: "tvs" },
-  { path: "/ua/holodilniki/", sectionId: "fridges" },
-  { path: "/ua/stiralnye-mashiny/", sectionId: "washers" },
-  { path: "/ua/kondicionery/", sectionId: "acs" },
-  { path: "/ua/mikrovolnovye-pechi/", sectionId: "microwaves" },
-  { path: "/ua/pylesosy/", sectionId: "vacuums" },
-  { path: "/ua/feny/", sectionId: "hair-dryers" },
-  { path: "/ua/vypryamiteli-dlya-volos/", sectionId: "stylers" },
-  { path: "/ua/naushniki/", sectionId: "headphones" },
-  { path: "/ua/planshety/", sectionId: "tablets" },
-  { path: "/ua/monitory/", sectionId: "monitors" },
-  { path: "/ua/posudomoechnye-mashiny/", sectionId: "dishwashers" },
-  { path: "/ua/kofemashiny/", sectionId: "coffee" },
+  { urlKey: "smartfon", sectionId: "smartphones" },
+  { urlKey: "notebook", sectionId: "laptops" },
+  { urlKey: "flat-tvs", sectionId: "tvs" },
+  { urlKey: "refrigerator", sectionId: "fridges" },
+  { urlKey: "wash-machines", sectionId: "washers" },
+  { urlKey: "conditioners", sectionId: "acs" },
+  { urlKey: "microwave-ovens", sectionId: "microwaves" },
+  { urlKey: "vacuum-cleaners", sectionId: "vacuums" },
+  { urlKey: "hair-dryer", sectionId: "hair-dryers" },
+  { urlKey: "hair-straighteners", sectionId: "stylers" },
+  { urlKey: "headphones", sectionId: "headphones" },
+  { urlKey: "planchet", sectionId: "tablets" },
+  { urlKey: "monitors", sectionId: "monitors" },
+  { urlKey: "dish-washing-machines", sectionId: "dishwashers" },
+  { urlKey: "coffee-machines", sectionId: "coffee" },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -72,9 +75,128 @@ function decodeEntities(s) {
     .replace(/&nbsp;/g, " ");
 }
 
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": UA,
+      Accept: "application/json",
+      Origin: "https://comfy.ua",
+      Referer: "https://comfy.ua/ua/",
+    },
+  });
+  const text = await res.text();
+  if (!res.ok || text.includes("Just a moment") || text.includes("Attention Required")) {
+    return { ok: false, status: res.status, data: null, text };
+  }
+  try {
+    return { ok: true, status: res.status, data: JSON.parse(text), text };
+  } catch {
+    return { ok: false, status: res.status, data: null, text };
+  }
+}
+
+async function fetchText(url) {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": UA,
+      "Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8",
+      Accept: "text/html,application/xhtml+xml",
+      Referer: "https://comfy.ua/ua/",
+    },
+    redirect: "follow",
+  });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, text };
+}
+
+async function resolveCategory(urlKey) {
+  const url = `https://im.comfy.ua/api/categories/url-key/${encodeURIComponent(urlKey)}?storeId=5`;
+  const { ok, status, data } = await fetchJson(url);
+  if (!ok || !data?.requestPath) return { ok: false, status, meta: null };
+  return {
+    ok: true,
+    status,
+    meta: {
+      id: data.id,
+      name: data.name,
+      urlKey: data.urlKey || urlKey,
+      requestPath: String(data.requestPath).replace(/^\/+|\/+$/g, ""),
+    },
+  };
+}
+
+function extractFromInitialState(html, sectionId) {
+  const products = [];
+  const m = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/);
+  if (!m) return products;
+  try {
+    const state = JSON.parse(m[1]);
+    const lists = [];
+    if (Array.isArray(state?.products)) lists.push(state.products);
+    if (Array.isArray(state?.category?.products)) lists.push(state.category.products);
+    if (Array.isArray(state?.listing?.products)) lists.push(state.listing.products);
+    // common nested shapes
+    const crawl = (node, depth = 0) => {
+      if (!node || depth > 6) return;
+      if (Array.isArray(node)) {
+        for (const item of node) crawl(item, depth + 1);
+        return;
+      }
+      if (typeof node !== "object") return;
+      if (node.name && (node.price || node.prices || node.finalPrice)) {
+        lists.push([node]);
+      }
+      for (const v of Object.values(node)) crawl(v, depth + 1);
+    };
+    crawl(state);
+
+    const seen = new Set();
+    for (const list of lists) {
+      for (const item of list) {
+        if (!item?.name) continue;
+        const price = Number(
+          item.price ??
+            item.finalPrice ??
+            item.prices?.price ??
+            item.prices?.special ??
+            item.prices?.current ??
+            0,
+        );
+        if (!price) continue;
+        const brand = item.brand?.name || item.brand || String(item.name).split(" ")[0];
+        const urlPath = item.url || item.request_path || item.requestPath || "";
+        const url = urlPath.startsWith("http")
+          ? urlPath
+          : urlPath
+            ? `https://comfy.ua/ua/${String(urlPath).replace(/^\/+/, "")}`
+            : "";
+        const key = `${item.name}|${price}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const specs = {};
+        const attrs = item.topAttributes || item.attributes || [];
+        if (Array.isArray(attrs)) {
+          for (const a of attrs.slice(0, 8)) {
+            const label = a.name || a.label || a.code;
+            const val = a.value || a.text;
+            if (label && val) specs[String(label)] = String(val);
+          }
+        }
+        products.push(makeProduct(sectionId, brand, item.name, price, url, specs));
+        if (products.length >= 60) return products;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return products;
+}
+
 function extractProducts(html, sectionId) {
   const products = [];
-  // JSON-LD Product blocks
+  const fromState = extractFromInitialState(html, sectionId);
+  products.push(...fromState);
+
   const ldRe = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let m;
   while ((m = ldRe.exec(html))) {
@@ -84,10 +206,17 @@ function extractProducts(html, sectionId) {
       for (const item of list) {
         const graph = item["@graph"] || [item];
         for (const node of graph) {
-          if (!node || (node["@type"] !== "Product" && !(Array.isArray(node["@type"]) && node["@type"].includes("Product"))))
+          if (
+            !node ||
+            (node["@type"] !== "Product" &&
+              !(Array.isArray(node["@type"]) && node["@type"].includes("Product")))
+          )
             continue;
           const name = node.name || "";
-          const brand = typeof node.brand === "string" ? node.brand : node.brand?.name || name.split(" ")[0] || "Comfy";
+          const brand =
+            typeof node.brand === "string"
+              ? node.brand
+              : node.brand?.name || name.split(" ")[0] || "Comfy";
           const offers = Array.isArray(node.offers) ? node.offers[0] : node.offers;
           const price = Number(offers?.price || offers?.lowPrice || 0);
           const url = node.url || offers?.url || "";
@@ -96,11 +225,10 @@ function extractProducts(html, sectionId) {
         }
       }
     } catch {
-      /* ignore bad json-ld */
+      /* ignore */
     }
   }
 
-  // Fallback: price + title patterns commonly used in ecommerce cards
   if (products.length === 0) {
     const cardRe =
       /href="(https:\/\/comfy\.ua\/ua\/[^"]+)"[^>]*>[\s\S]{0,400}?([0-9][0-9\s]{2,9})\s*(?:₴|грн)/gi;
@@ -122,7 +250,7 @@ function extractProducts(html, sectionId) {
   return products;
 }
 
-function makeProduct(sectionId, brand, name, price, url) {
+function makeProduct(sectionId, brand, name, price, url, extraSpecs = {}) {
   const bandId = bandFromPrice(sectionId, price);
   const id = `live-${sectionId}-${Buffer.from(`${brand}-${name}-${price}`).toString("base64url").slice(0, 18)}`;
   return {
@@ -147,46 +275,58 @@ function makeProduct(sectionId, brand, name, price, url) {
     con: "Уточнюй наявність і акції в Digital Assistant / на сайті в день зміни",
     upsell: ["Аксесуари", "Гарантія", "Кредит/ОП"],
     pitch: `${brand} ${name} — орієнтовно ${price.toLocaleString("uk-UA")} ₴. Перевір актуальність перед клієнтом.`,
-    specs: { price: `${price} ₴`, source: "comfy.ua" },
+    specs: { price: `${price} ₴`, source: "comfy.ua", ...extraSpecs },
     isHit: false,
     relatedIds: [],
     sourceUrl: url || undefined,
   };
 }
 
-async function fetchText(url) {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": UA,
-      "Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8",
-      Accept: "text/html,application/xhtml+xml",
-    },
-    redirect: "follow",
-  });
-  const text = await res.text();
-  return { ok: res.ok, status: res.status, text };
-}
-
 async function main() {
   console.log("Comfy Floor Map — local catalog parse");
-  console.log("Polite mode: ~2.5s between categories\n");
+  console.log("1) resolve categories via im.comfy.ua");
+  console.log("2) fetch HTML pages politely (~2.5s)\n");
+
+  const categoryMeta = [];
+  for (const cat of CATEGORIES) {
+    process.stdout.write(`meta ${cat.urlKey} … `);
+    const resolved = await resolveCategory(cat.urlKey);
+    if (resolved.ok) {
+      console.log(`${resolved.meta.name} → /ua/${resolved.meta.requestPath}/`);
+      categoryMeta.push({ ...cat, ...resolved.meta });
+    } else {
+      console.log(`fallback path (${resolved.status})`);
+      categoryMeta.push({
+        ...cat,
+        id: null,
+        name: cat.urlKey,
+        requestPath: cat.urlKey,
+      });
+    }
+    await sleep(400);
+  }
+
+  fs.writeFileSync(
+    path.join(outDir, "categories.json"),
+    JSON.stringify({ at: new Date().toISOString(), categories: categoryMeta }, null, 2),
+  );
 
   const all = [];
   const report = [];
 
-  for (const cat of CATEGORIES) {
-    const url = `https://comfy.ua${cat.path}`;
+  for (const cat of categoryMeta) {
+    const url = `https://comfy.ua/ua/${cat.requestPath}/`;
     process.stdout.write(`→ ${cat.sectionId} … `);
     try {
       const { ok, status, text } = await fetchText(url);
-      if (!ok || text.includes("Just a moment") || text.includes("cf-browser-verification")) {
+      if (!ok || text.includes("Just a moment") || text.includes("cf-browser-verification") || text.includes("Attention Required")) {
         console.log(`blocked/failed (${status})`);
-        report.push({ sectionId: cat.sectionId, status, ok: false, count: 0 });
+        report.push({ sectionId: cat.sectionId, url, status, ok: false, count: 0 });
       } else {
         const items = extractProducts(text, cat.sectionId);
         all.push(...items);
         console.log(`${items.length} items`);
-        report.push({ sectionId: cat.sectionId, status, ok: true, count: items.length });
+        report.push({ sectionId: cat.sectionId, url, status, ok: true, count: items.length });
       }
     } catch (e) {
       console.log(`error: ${e.message}`);
@@ -195,7 +335,6 @@ async function main() {
     await sleep(2500);
   }
 
-  // de-dupe by name+price
   const seen = new Set();
   const unique = [];
   for (const p of all) {
@@ -219,10 +358,10 @@ export const liveCatalogProducts: CatalogProduct[] = ${JSON.stringify(unique, nu
   fs.writeFileSync(path.join(root, "src", "content", "catalog-live.ts"), ts);
 
   console.log(`\nDone: ${unique.length} products`);
-  console.log("Wrote data/catalog/live-products.json + src/content/catalog-live.ts");
+  console.log("Wrote data/catalog/{categories,live-products,live-report}.json + catalog-live.ts");
   if (unique.length === 0) {
-    console.log("\nNo products parsed (Cloudflare/HTML changed).");
-    console.log("App still works on educational seed catalog (npm run seed:catalog).");
+    console.log("\nNo products parsed (Cloudflare/HTML). Seed catalog still works.");
+    console.log("Tip: run this from home WSL after opening comfy.ua once in a browser.");
   }
 }
 
