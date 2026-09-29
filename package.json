@@ -8,7 +8,9 @@
     "start": "next start --port 43127",
     "lint": "eslint",
     "seed:catalog": "node scripts/seed-catalog.mjs",
-    "parse:comfy": "node scripts/parse-comfy.mjs"
+    "parse:comfy": "node scripts/parse-comfy.mjs",
+    "build:pages": "BASE_PATH=/comfy-scan next build && touch out/.nojekyll",
+    "preview:static": "npx --yes serve out -l 43127"
   },
   "dependencies": {
     "clsx": "^2.1.1",
