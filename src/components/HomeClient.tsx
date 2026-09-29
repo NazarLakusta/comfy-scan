@@ -49,18 +49,16 @@ export function HomeClient() {
             <span className="block text-orange-soft">Впевненість на зміні.</span>
           </h1>
           <p className="mt-4 max-w-xl text-base text-muted sm:text-lg">
-            {stats.products} товарів · {stats.sections} секцій · тренажер у кожній.
-            Полиці, хіти, порівняння і сценарії клієнта.
+            {stats.products} товарів у тренажері · глибокі теми · серйозні іспити.
+            Навчись пояснювати Герци, матриці, чипи й мікрофони — не ярлики полиць.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <ButtonLink href={continueSection ? `/train/${continueSection.id}` : "/onboarding"}>
-              {continueSection ? `Продовжити: ${continueSection.title}` : "Почати навчання"}
+            <ButtonLink href="/learn">Школа з нуля</ButtonLink>
+            <ButtonLink href={continueSection ? `/learn/${continueSection.id}` : "/learn/smartphones"} variant="soft">
+              {continueSection ? `Вчити: ${continueSection.title}` : "Почати зі смартфонів"}
             </ButtonLink>
-            <ButtonLink href="/catalog" variant="soft">
-              Відкрити каталог
-            </ButtonLink>
-            <ButtonLink href="/scenarios" variant="ghost">
-              Клиент сказав…
+            <ButtonLink href="/comfy-map" variant="ghost">
+              Усі категорії Comfy
             </ButtonLink>
           </div>
         </div>
@@ -137,16 +135,22 @@ export function HomeClient() {
                           </Link>
                           <div className="mt-3 flex flex-wrap gap-2">
                             <Link
-                              href={`/train/${section.id}`}
+                              href={`/learn/${section.id}`}
                               className="rounded-lg bg-orange px-3 py-1.5 text-xs font-semibold text-black"
                             >
-                              Вчити
+                              Навчання
                             </Link>
                             <Link
-                              href={`/catalog?section=${section.id}`}
+                              href={`/exam/${section.id}`}
                               className="rounded-lg bg-bg-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text"
                             >
-                              Каталог
+                              Іспит
+                            </Link>
+                            <Link
+                              href={`/train/${section.id}`}
+                              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:bg-bg-2 hover:text-text"
+                            >
+                              Шпаргалка
                             </Link>
                             <Link
                               href={`/compare?section=${section.id}`}

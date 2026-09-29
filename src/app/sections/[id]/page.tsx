@@ -46,9 +46,15 @@ export default async function SectionPage({
           <p className="mt-2 text-xs text-faint">{totalProducts} товарів у каталозі цієї секції</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ButtonLink href={`/train/${section.id}`}>Вчити секцію</ButtonLink>
-          <ButtonLink href={`/catalog?section=${section.id}`} variant="soft">
-            Каталог секції
+          <ButtonLink href={`/learn/${section.id}`}>Навчання з нуля</ButtonLink>
+          <ButtonLink href={`/exam/${section.id}`} variant="soft">
+            Іспит
+          </ButtonLink>
+          <ButtonLink href={`/train/${section.id}`} variant="ghost">
+            Шпаргалка
+          </ButtonLink>
+          <ButtonLink href={`/catalog?section=${section.id}`} variant="ghost">
+            Каталог
           </ButtonLink>
           {canCompare ? (
             <ButtonLink href={`/compare?section=${section.id}`} variant="ghost">

@@ -17,8 +17,14 @@ export function SiteHeader({ className }: { className?: string }) {
           </div>
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-0.5 text-sm">
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/learn">
+            Навчання
+          </Link>
           <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/catalog">
             Каталог
+          </Link>
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/comfy-map">
+            Comfy карта
           </Link>
           <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/scenarios">
             Клиент
@@ -28,9 +34,6 @@ export function SiteHeader({ className }: { className?: string }) {
           </Link>
           <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/review">
             Повторити
-          </Link>
-          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/search">
-            Пошук
           </Link>
         </nav>
       </div>
