@@ -40,6 +40,8 @@ export type Product = {
   specs: Record<string, string>;
   isHit: boolean;
   relatedIds: string[];
+  price?: number;
+  sourceUrl?: string;
 };
 
 export type Term = {

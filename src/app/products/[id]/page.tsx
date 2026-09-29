@@ -48,6 +48,30 @@ export default async function ProductPage({
         <span className="block text-orange-soft">{product.name}</span>
       </h1>
       <p className="mt-3 text-muted">{product.forWhom}</p>
+      {product.price != null && (
+        <p className="mt-2 text-2xl font-bold text-green">
+          ~{product.price.toLocaleString("uk-UA")} ₴
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ButtonLink href={`/train/${product.sectionId}`} variant="soft">
+          Вчити секцію
+        </ButtonLink>
+        <ButtonLink href={`/catalog?section=${product.sectionId}`} variant="ghost">
+          Каталог секції
+        </ButtonLink>
+        {product.sourceUrl && (
+          <a
+            href={product.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-muted hover:bg-bg-2 hover:text-text"
+          >
+            Comfy.ua ↗
+          </a>
+        )}
+      </div>
 
       <div className="mt-6 rounded-2xl panel p-5">
         <div className="text-xs font-semibold uppercase tracking-wide text-green">

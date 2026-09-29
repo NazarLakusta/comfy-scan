@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader({ className }: { className?: string }) {
   return (
-    <header className={cn("border-b border-line/80 bg-bg-0/70 backdrop-blur-md", className)}>
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <header className={cn("sticky top-0 z-40 border-b border-line/80 bg-bg-0/80 backdrop-blur-md", className)}>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="group flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-orange text-sm font-extrabold text-black">
             CF
@@ -16,14 +16,20 @@ export function SiteHeader({ className }: { className?: string }) {
             <div className="text-[11px] text-muted">тренажер консультанта</div>
           </div>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
-          <Link className="rounded-lg px-3 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/scenarios">
-            Клиент сказав
+        <nav className="flex flex-wrap items-center justify-end gap-0.5 text-sm">
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/catalog">
+            Каталог
           </Link>
-          <Link className="rounded-lg px-3 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/compare">
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/scenarios">
+            Клиент
+          </Link>
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/compare">
             Порівняти
           </Link>
-          <Link className="rounded-lg px-3 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/search">
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/review">
+            Повторити
+          </Link>
+          <Link className="rounded-lg px-2.5 py-2 text-muted hover:bg-bg-2 hover:text-text" href="/search">
             Пошук
           </Link>
         </nav>
@@ -66,7 +72,11 @@ export function ButtonLink({
 export function BandBadge({ band }: { band: "budget" | "mid" | "premium" }) {
   const label = band === "budget" ? "Бюджет" : band === "mid" ? "Середній" : "Преміум";
   const cls =
-    band === "budget" ? "band-budget bg-budget/10" : band === "mid" ? "band-mid bg-mid/10" : "band-premium bg-premium/10";
+    band === "budget"
+      ? "band-budget bg-budget/10"
+      : band === "mid"
+        ? "band-mid bg-mid/10"
+        : "band-premium bg-premium/10";
   return (
     <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", cls)}>
       {label}
