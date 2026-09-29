@@ -148,14 +148,20 @@ export function getCatalogStats() {
 export function searchAll(query: string) {
   const q = query.trim().toLowerCase();
   if (!q) {
-    return { sections: [] as Section[], products: [] as Product[], scenarios: [] as Scenario[] };
+    return {
+      sections: [] as Section[],
+      products: [] as Product[],
+      scenarios: [] as Scenario[],
+      terms: [] as Term[],
+    };
   }
 
   const matchedSections = sections.filter(
     (s) =>
       s.title.toLowerCase().includes(q) ||
       s.summary.toLowerCase().includes(q) ||
-      s.id.includes(q),
+      s.id.includes(q) ||
+      getDepartment(s.departmentId)?.title.toLowerCase().includes(q),
   );
 
   const matchedProducts = products.filter((p) => {
@@ -164,8 +170,10 @@ export function searchAll(query: string) {
       p.brand,
       p.forWhom,
       p.pitch,
+      p.con,
       ...p.tags,
       ...p.pros,
+      ...p.upsell,
       ...Object.values(p.specs),
       p.price != null ? String(p.price) : "",
     ]
@@ -181,10 +189,16 @@ export function searchAll(query: string) {
       s.budgetHint.toLowerCase().includes(q),
   );
 
+  const matchedTerms = terms.filter(
+    (t) =>
+      t.title.toLowerCase().includes(q) || t.plainExplain.toLowerCase().includes(q),
+  );
+
   return {
     sections: matchedSections,
     products: matchedProducts,
     scenarios: matchedScenarios,
+    terms: matchedTerms,
   };
 }
 

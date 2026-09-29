@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPrioritySections } from "@/content";
 import { updateProgress } from "@/lib/progress";
-import { ButtonLink } from "@/components/ui";
 
 const slides = [
   {
@@ -71,9 +70,16 @@ export default function OnboardingPage() {
         </div>
       </div>
       <div className="mt-4 text-center">
-        <ButtonLink href="/" variant="ghost">
+        <button
+          type="button"
+          className="text-sm text-muted hover:text-orange-soft"
+          onClick={() => {
+            updateProgress((prev) => ({ ...prev, onboardingDone: true }));
+            router.push("/");
+          }}
+        >
           Пропустити
-        </ButtonLink>
+        </button>
       </div>
     </div>
   );

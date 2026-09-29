@@ -147,6 +147,20 @@ export function CompareClient() {
         <div className="mt-8 space-y-4">
           <CompareTable items={items} sectionId={items[0].sectionId} />
           <div className="rounded-2xl panel p-5">
+            <h2 className="font-bold text-green">Кому що</h2>
+            <div className="mt-3 space-y-3">
+              {items.map((p) => (
+                <p key={p.id} className="text-sm text-muted">
+                  <span className="font-semibold text-text">
+                    {p.brand} {p.name}:{" "}
+                  </span>
+                  бери якщо {p.forWhom.toLowerCase()}. {p.pros[0]}.
+                  {p.con ? ` Не беруть, коли ${p.con.toLowerCase()}.` : ""}
+                </p>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl panel p-5">
             <h2 className="font-bold text-green">Що сказати вголос</h2>
             <div className="mt-3 space-y-3">
               {items.map((p) => (
@@ -159,7 +173,16 @@ export function CompareClient() {
           </div>
         </div>
       ) : (
-        <p className="mt-8 text-sm text-faint">Обери щонайменше 2 моделі.</p>
+        <div className="mt-8 rounded-2xl panel p-5 text-sm text-muted">
+          Обери щонайменше 2 моделі.
+          {sectionFilter && (
+            <div className="mt-3">
+              <ButtonLink href={`/sections/${sectionFilter}`} variant="soft">
+                Назад у секцію
+              </ButtonLink>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-8">

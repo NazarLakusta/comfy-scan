@@ -116,6 +116,25 @@ export function SearchClient() {
               )}
             </div>
           </section>
+
+          <section>
+            <h2 className="font-bold">Терміни ({results.terms.length})</h2>
+            <div className="mt-3 space-y-2">
+              {results.terms.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/sections/${t.sectionId}`}
+                  className="block rounded-xl panel px-4 py-3 hover:border-orange/40"
+                >
+                  <div className="font-semibold">{t.title}</div>
+                  <div className="text-xs text-muted line-clamp-2">{t.plainExplain}</div>
+                </Link>
+              ))}
+              {results.terms.length === 0 && (
+                <p className="text-sm text-faint">Нічого</p>
+              )}
+            </div>
+          </section>
         </div>
       )}
 

@@ -140,9 +140,13 @@ export default async function ProductPage({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {product.tags.map((t) => (
-          <span key={t} className="rounded-full bg-bg-2 px-3 py-1 text-xs text-muted">
+          <Link
+            key={t}
+            href={`/search?q=${encodeURIComponent(t)}`}
+            className="rounded-full bg-bg-2 px-3 py-1 text-xs text-muted hover:bg-bg-1 hover:text-orange-soft"
+          >
             #{t}
-          </span>
+          </Link>
         ))}
       </div>
     </div>

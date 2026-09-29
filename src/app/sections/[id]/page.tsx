@@ -9,6 +9,7 @@ import {
   sections,
 } from "@/content";
 import { BandBadge, ButtonLink } from "@/components/ui";
+import { NotesBox } from "@/components/NotesBox";
 import { formatPriceBand } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -26,7 +27,9 @@ export default async function SectionPage({
 
   const terms = getTermsBySection(id);
   const scenarios = getScenariosBySection(id);
-  const totalProducts = getProductsBySection(id).length;
+  const sectionProducts = getProductsBySection(id);
+  const totalProducts = sectionProducts.length;
+  const canCompare = totalProducts >= 2;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -47,9 +50,11 @@ export default async function SectionPage({
           <ButtonLink href={`/catalog?section=${section.id}`} variant="soft">
             Каталог секції
           </ButtonLink>
-          <ButtonLink href={`/compare?section=${section.id}`} variant="ghost">
-            Порівняти
-          </ButtonLink>
+          {canCompare ? (
+            <ButtonLink href={`/compare?section=${section.id}`} variant="ghost">
+              Порівняти
+            </ButtonLink>
+          ) : null}
         </div>
       </div>
 
@@ -118,11 +123,19 @@ export default async function SectionPage({
             </span>
           ))}
         </div>
-        <div className="mt-4">
-          <ButtonLink href={`/compare?section=${section.id}`} variant="soft">
-            Порівняти моделі секції
-          </ButtonLink>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {canCompare ? (
+            <ButtonLink href={`/compare?section=${section.id}`} variant="soft">
+              Порівняти моделі секції
+            </ButtonLink>
+          ) : (
+            <span className="text-sm text-faint">Для порівняння потрібно ≥2 моделі</span>
+          )}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <NotesBox noteKey={`section:${section.id}`} label="Мої нотатки по секції" />
       </section>
 
       {scenarios.length > 0 && (

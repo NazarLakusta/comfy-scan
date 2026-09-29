@@ -245,9 +245,25 @@ export function TrainerClient({ sectionId }: { sectionId: string }) {
         )}
 
         {step.type === "summary" && (
-          <div className="mt-6 rounded-2xl bg-green/10 p-4 text-sm text-green">
-            Прогрес збережено локально на цьому пристрої. Завтра повтори слабкі місця або візьми
-            наступну пріоритетну секцію.
+          <div className="mt-6 space-y-3 rounded-2xl bg-green/10 p-4 text-sm text-green">
+            <p>
+              Прогрес збережено локально на цьому пристрої. Завтра повтори слабкі місця або
+              візьми наступну пріоритетну секцію.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/review"
+                className="rounded-lg bg-green/20 px-3 py-1.5 text-xs font-semibold text-green hover:bg-green/30"
+              >
+                Повторити слабкі →
+              </Link>
+              <Link
+                href="/catalog"
+                className="rounded-lg bg-bg-0/40 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text"
+              >
+                Каталог
+              </Link>
+            </div>
           </div>
         )}
       </article>
