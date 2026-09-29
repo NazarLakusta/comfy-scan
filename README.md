@@ -1,17 +1,17 @@
 # Comfy Floor Map
 
-Неофіційний особистий тренажер для менеджера-консультанта **Comfy**: карта залу, каталог, цінові полиці, хіти, порівняння і навчання по черзі.
+Неофіційна **школа менеджера-консультанта Comfy**: навчання з нуля, серйозні іспити, порівняння, каталог і карта офіційних категорій сайту.
 
-> Це не офіційний продукт Comfy і не заміна Digital Assistant.
+> Не офіційний продукт Comfy і не заміна Digital Assistant.
 
-Повне ТЗ: [TZ.md](./TZ.md)
+**Живий сайт:** https://nazarlakusta.github.io/comfy-scan/
 
 ## Що вміє
 
-- Карта всього залу (департаменти → секції)
-- **Каталог** з фільтрами: секція / полиця / бренд / хіти / пошук
-- У кожній секції: бюджет / середній / преміум + тренажер
-- Порівняння 2–3 моделей, сценарії «Клиент сказав…», повторення слабких
+- **Навчання** `/learn` — глибокі теми (процесор, ОЗП, Герци, IPS/VA/OLED, інвертор, ANC, мікрофони…)
+- **Іспити** `/exam/[секція]` — складність 1–3, прохідний орієнтир 80%
+- **Порівняння**, сценарії клієнта, шпаргалка-тренажер
+- **Каталог** навчальних хітів + **Comfy карта** 700+ офіційних категорій сайту
 - Темна тема в тонах Comfy
 
 ## Запуск локально
@@ -21,61 +21,44 @@ npm install
 npm run dev
 ```
 
-Відкрий http://127.0.0.1:43127
-
-## GitHub Pages (сайт будь-де)
-
-Додаток збирається в статику (`out/`) і деплоїться Actions-ом.
-
-### 1) Створи репо на GitHub
-
-Наприклад назва: `comfy-scan` (або `comfy-floor-map`).
-
-### 2) Запуш код з WSL
+http://127.0.0.1:43127
 
 ```bash
-cd ~/comfy-scan
-git pull
-
-# додай GitHub remote (підстав свій нік і назву репо)
-git remote add github https://github.com/ТВІЙ_НІК/comfy-scan.git
-# якщо remote вже є:
-# git remote set-url github https://github.com/ТВІЙ_НІК/comfy-scan.git
-
-git push -u github main
+npm run seed:knowledge   # банк знань + іспити
+npm run seed:catalog     # навчальні товари
+npm run parse:comfy      # live з comfy.ua (краще з домашнього WSL)
 ```
 
-Якщо GitHub просить логін — краще Personal Access Token або `gh auth login` у WSL.
+## GitHub Pages (якщо бачиш README замість додатку)
 
-### 3) Увімкни Pages
+У Settings → Pages у тебе зараз **Source: Deploy from a branch** і **Branch: main /(root)**.  
+Папка `/(root)` — це сирий репозиторій (README), а не зібраний сайт.
 
-1. GitHub → твоє репо → **Settings → Pages**
-2. **Source**: GitHub Actions
-3. Дочекайся зеленого workflow **Deploy GitHub Pages**
+### Варіант A — найпростіший (залишаєш «Deploy from a branch»)
 
-Сайт буде тут:
+1. Settings → Pages → **Branch**
+2. Залиш `main`, але папку зміни з **`/(root)`** на **`/docs`**
+3. Save
+4. Зачекай 1–2 хв, онови сторінку з Ctrl+Shift+R
 
-`https://ТВІЙ_НІК.github.io/comfy-scan/`
+У репо вже лежить зібраний сайт у папці `docs/` (з `index.html`).
 
-(останній сегмент = назва репо)
+### Варіант B — GitHub Actions (краще надовго)
 
-### Локальна перевірка статичної збірки
+1. Settings → Pages → **Source** → вибери **GitHub Actions** (не «Deploy from a branch»)
+2. Actions → **Deploy GitHub Pages** → Run workflow (або зроби `git push`)
+3. Дочекайся зеленої галочки
+
+## Оновити статику в `docs/` після змін
 
 ```bash
 npm run build:pages
-npm run preview:static
+rm -rf docs && mkdir docs && cp -a out/. docs/ && touch docs/.nojekyll
+git add docs && git commit -m "chore: refresh GitHub Pages docs/" && git push
 ```
 
-## Каталог і парсер
+## Чесно про «всі товари Comfy»
 
-```bash
-npm run seed:catalog
-npm run parse:comfy   # з домашнього WSL; Cloudflare часто ріже хмарні IP
-```
-
-## Структура
-
-- `src/content` — секції, seed/live каталог, тренажер
-- `src/app` — сторінки
-- `.github/workflows/deploy-pages.yml` — деплой на GitHub Pages
-- `scripts/` — seed і парсер
+- Дерево категорій сайту — так (публічний API категорій).
+- Повні live-SKU з хмари часто ріже Cloudflare; парсер розрахований на запуск у тебе в WSL.
+- Навчальний каталог + знання покривають залу для стажера з нуля навіть без live-парсу.

@@ -11,6 +11,7 @@
     "seed:knowledge": "node scripts/seed-knowledge.mjs",
     "parse:comfy": "node scripts/parse-comfy.mjs",
     "build:pages": "BASE_PATH=/comfy-scan next build && touch out/.nojekyll",
+    "sync:docs": "npm run build:pages && rm -rf docs && mkdir docs && cp -a out/. docs/ && touch docs/.nojekyll",
     "preview:static": "npx --yes serve out -l 43127"
   },
   "dependencies": {
